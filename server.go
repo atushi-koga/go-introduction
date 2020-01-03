@@ -1,11 +1,13 @@
 package main
 
-import(
+import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 func hello(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -103,6 +105,52 @@ func writeJSONToResponseBody(w http.ResponseWriter, r *http.Request, p httproute
 	w.Write(jsonData)
 }
 
+func setCookie(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	msg1 := []byte("Hello World 100%")
+	c1 := http.Cookie{
+		Name:       "first_cookie",
+		Value:      base64.URLEncoding.EncodeToString(msg1),
+		HttpOnly:   true,
+	}
+
+	c2 := http.Cookie{
+		Name:       "second_cookie",
+		Value:      "Programing Language Go",
+		HttpOnly:   true,
+	}
+	w.Header().Set("Set-Cookie", c1.String())
+	w.Header().Add("Set-Cookie", c2.String())
+}
+
+func getCookie(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	firstCookie, err := r.Cookie("first_cookie")
+	if err != nil {
+		fmt.Fprintln(w, "Can not get the first cookie")
+	}
+	cookies := r.Cookies()
+	fmt.Fprintln(w, firstCookie)
+	fmt.Fprintln(w, cookies)
+}
+
+func deleteAndShowCookie(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	c, err := r.Cookie("first_cookie")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			fmt.Fprintln(w, "Cookieがありません")
+		}
+	}else{
+		c1 := http.Cookie{
+			Name:    "first_cookie",
+			MaxAge:   -1,
+			Expires: time.Unix(1, 0),
+		}
+		w.Header().Set("Set-Cookie", c1.String())
+
+		val, _ := base64.URLEncoding.DecodeString(c.Value)
+		fmt.Fprintln(w, string(val))
+	}
+}
+
 func main() {
 	mux := httprouter.New()
 	mux.GET("/hello/:name", hello)
@@ -118,6 +166,9 @@ func main() {
 	mux.GET("/write_json", writeJSONToResponseBody)
 	mux.GET("/set_status_code", setStatusCode)
 	mux.GET("/write_response_header", writeResponseHeader)
+	mux.GET("/set_cookie", setCookie)
+	mux.GET("/get_cookie", getCookie)
+	mux.GET("/delete_and_show_cookie", deleteAndShowCookie)
 	server := http.Server{
 		Addr: "127.0.0.1:8080",
 		Handler: mux,
