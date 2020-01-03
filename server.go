@@ -2,24 +2,26 @@ package main
 
 import(
 	"fmt"
+	"github.com/julienschmidt/httprouter"
 	"net/http"
 )
 
-func hello (w http.ResponseWriter, r *http.Request){
-	fmt.Fprintf(w, "Hello")
+func hello(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	fmt.Fprintf(w, "Hello, %s\n", p.ByName("name"))
 }
 
-func world (w http.ResponseWriter, r *http.Request){
-	fmt.Fprintf(w, "World")
+func world(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	fmt.Fprintf(w, "World, %s\n", p.ByName("name"))
 }
 
 func main() {
+	mux := httprouter.New()
+	mux.GET("/hello/:name", hello)
+	mux.GET("/world/:name", world)
 	server := http.Server{
 		Addr: "127.0.0.1:8080",
+		Handler: mux,
 	}
-
-	http.HandleFunc("/hello", hello)
-	http.HandleFunc("/world", world)
 
 	server.ListenAndServe()
 }
