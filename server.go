@@ -1,6 +1,7 @@
 package main
 
 import(
+	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
@@ -68,6 +69,40 @@ func formFile(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	}
 }
 
+func writeHTMLToResponseBody(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	str := `<html>
+<head><title>Go Web Programing</title></head>
+<body><h1>Hello World</h1></body>
+</html>
+`
+	w.Write([]byte(str))
+}
+
+func setStatusCode(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	w.WriteHeader(501)
+	fmt.Fprintln(w, "そのようなサービスはありません")
+}
+
+func writeResponseHeader(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	w.Header().Set("Location", "http://www.google.com")
+	w.WriteHeader(302)
+}
+
+type Post struct {
+	User string
+	Threads []string
+}
+
+func writeJSONToResponseBody(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	post := &Post{
+		User:    "Yamada Tarou",
+		Threads: []string{"a", "b", "c"},
+	}
+	jsonData, _ := json.Marshal(post)
+	w.Write(jsonData)
+}
+
 func main() {
 	mux := httprouter.New()
 	mux.GET("/hello/:name", hello)
@@ -79,6 +114,10 @@ func main() {
 	mux.POST("/post_form_value", postFormValue)
 	mux.POST("/multipart_form", multipartForm)
 	mux.POST("/form_file", formFile)
+	mux.GET("/write_html", writeHTMLToResponseBody)
+	mux.GET("/write_json", writeJSONToResponseBody)
+	mux.GET("/set_status_code", setStatusCode)
+	mux.GET("/write_response_header", writeResponseHeader)
 	server := http.Server{
 		Addr: "127.0.0.1:8080",
 		Handler: mux,
